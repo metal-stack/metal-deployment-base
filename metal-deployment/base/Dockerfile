@@ -1,9 +1,9 @@
 FROM python:buster
 
-ENV VERSION_VAGRANT=2.2.7 \
+ENV VERSION_ANSIBLE=2.9.2 \
     VERSION_HELM=3.0.3 \
-    VERSION_ANSIBLE=2.9.2 \
-    VERSION_STERN=1.11.0
+    VERSION_STERN=1.11.0 \
+    VERSION_VAGRANT=2.2.7
 
 # vagrant is required for running the vagrant dynamic inventory script from within the container...
 ARG VAGRANT_PACKAGE_URL=https://releases.hashicorp.com/vagrant/${VERSION_VAGRANT}/vagrant_${VERSION_VAGRANT}_x86_64.deb
@@ -34,7 +34,5 @@ RUN set -x \
  && curl -Lo stern https://github.com/wercker/stern/releases/download/${VERSION_STERN}/stern_linux_amd64 \
  && chmod +x stern \
  && mv stern /usr/local/bin/
-
-COPY --from=registry.fi-ts.io/metal/metalctl /metalctl /usr/local/bin/
 
 ENTRYPOINT ["bash"]
