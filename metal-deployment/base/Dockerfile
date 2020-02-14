@@ -33,6 +33,8 @@ RUN set -x \
  && vagrant plugin install vagrant-libvirt \
  && curl -Lo stern https://github.com/wercker/stern/releases/download/${VERSION_STERN}/stern_linux_amd64 \
  && chmod +x stern \
- && mv stern /usr/bin/
+ && mv stern /usr/local/bin/
 
-COPY --from=registry.fi-ts.io/metal/metalctl /metalctl /
+COPY --from=registry.fi-ts.io/metal/metalctl /metalctl /usr/local/bin/
+
+ENTRYPOINT ["bash"]
