@@ -1,0 +1,22 @@
+name: metal-deployment image from master
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+    - 'metal-deployment/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: olegtarasov/get-tag@v1
+      id: tagName
+    - name: Build the Docker images
+      run: |
+        cd metal-deployment/base
+        docker login -u metalstackci -p ${{ secrets.DOCKER_HUB_TOKEN }}
+        make dockerimage
+        make dockerpush
