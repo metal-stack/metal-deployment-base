@@ -6,4 +6,4 @@ dockerimage:
 
 .PHONY: dockerpush
 dockerpush:
-	docker push metalstack/meta-deployment-base:${DOCKER_TAG}
+	docker push metalstack/metal-deployment-base:${DOCKER_TAG}
