@@ -9,12 +9,16 @@ ENV VERSION_ANSIBLE=2.9.2 \
 ARG VAGRANT_PACKAGE_URL=https://releases.hashicorp.com/vagrant/${VERSION_VAGRANT}/vagrant_${VERSION_VAGRANT}_x86_64.deb
 
 RUN set -x \
+ && export CLOUD_SDK_REPO="cloud-sdk-buster" \
+ && echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
+ && curl -f https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
  && apt-get update \
  && apt-get install --yes --no-install-recommends \
         apt-transport-https \
         ca-certificates \
         curl \
         gnupg2 \
+        google-cloud-sdk \
         software-properties-common \
         connect-proxy \
         libvirt-dev \
