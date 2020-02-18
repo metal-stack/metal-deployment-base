@@ -35,4 +35,4 @@ RUN set -x \
  && chmod +x stern \
  && mv stern /usr/local/bin/
 
-ENTRYPOINT ["bash"]
+ENTRYPOINT []
