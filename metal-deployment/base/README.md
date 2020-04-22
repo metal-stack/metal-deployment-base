@@ -1,3 +1,3 @@
 # Metal Deployment Base
 
-This image can be used for deploying Metal Stack with Ansible.
+This image can be used for deploying metal-stack with Ansible.

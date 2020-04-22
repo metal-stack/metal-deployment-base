@@ -1,7 +1,7 @@
-# Metal Stack Dockerfiles
+# metal-stack Dockerfiles
 
-This repository defines and builds some basic Dockerfiles that are used in the Metal-Stack.
+This repository defines and builds some basic Dockerfiles that are used in the metal-stack.
 
 | Name                  | Description                                         |
 | --------------------- | --------------------------------------------------- |
-| metal-deployment-base | Can be used when deploying Metal Stack with Ansible | 
+| metal-deployment-base | Can be used when deploying metal-stack with Ansible | 
