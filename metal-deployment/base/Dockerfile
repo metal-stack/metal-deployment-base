@@ -3,7 +3,7 @@ FROM python:buster
 ENV VERSION_ANSIBLE=2.9.2 \
     VERSION_HELM=3.1.1 \
     VERSION_STERN=1.11.0 \
-    VERSION_VAGRANT=2.2.7
+    VERSION_VAGRANT=2.2.9
 
 # vagrant is required for running the vagrant dynamic inventory script from within the container...
 ARG VAGRANT_PACKAGE_URL=https://releases.hashicorp.com/vagrant/${VERSION_VAGRANT}/vagrant_${VERSION_VAGRANT}_x86_64.deb
