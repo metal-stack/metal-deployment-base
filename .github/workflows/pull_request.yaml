@@ -1,22 +1,21 @@
-name: metal-deployment image from master
+name: metal-deployment image from pull request
 
 on:
-  push:
+  pull_request:
     branches:
       - master
-    paths:
-    - 'metal-deployment/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: olegtarasov/get-tag@v1
-      id: tagName
+    - name: Branch name
+      run: echo running on branch ${GITHUB_HEAD_REF##*/}
     - name: Build the Docker images
       run: |
         cd metal-deployment/base
+        export GITHUB_TAG_NAME=pr-${GITHUB_HEAD_REF##*/}
         docker login -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
         make dockerimage
         make dockerpush
