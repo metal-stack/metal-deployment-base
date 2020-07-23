@@ -16,6 +16,6 @@ jobs:
       run: |
         cd metal-deployment/base
         export GITHUB_TAG_NAME=pr-${GITHUB_HEAD_REF##*/}
-        docker login -u metalstackci -p ${{ secrets.DOCKER_HUB_TOKEN }}
+        docker login -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
         make dockerimage
         make dockerpush
