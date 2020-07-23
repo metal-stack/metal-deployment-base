@@ -17,6 +17,6 @@ jobs:
     - name: Build the Docker images
       run: |
         cd metal-deployment/base
-        docker login -u metalstackci -p ${{ secrets.DOCKER_HUB_TOKEN }}
+        docker login -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
         make dockerimage
         make dockerpush
