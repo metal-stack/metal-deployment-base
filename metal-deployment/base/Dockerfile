@@ -1,6 +1,7 @@
 FROM python:buster
 
 ENV VERSION_ANSIBLE=2.9.13 \
+    VERSION_CT=0.9.0 \
     VERSION_HELM=3.3.1 \
     VERSION_STERN=1.11.0 \
     VERSION_VAGRANT=2.2.9
@@ -38,6 +39,9 @@ RUN set -x \
  && curl -Lo stern https://github.com/wercker/stern/releases/download/${VERSION_STERN}/stern_linux_amd64 \
  && chmod +x stern \
  && mv stern /usr/local/bin/ \
+ && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
+ && chmod +x ct \
+ && mv ct /usr/local/bin/ \
  && curl -fsSL https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc \
  && chmod +x /usr/local/bin/mc
 
