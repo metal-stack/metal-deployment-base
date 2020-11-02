@@ -31,7 +31,7 @@ RUN set -x \
  && apt-get install --yes --no-install-recommends docker-ce  \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && pip install --upgrade pip \
- && pip install ansible==${VERSION_ANSIBLE} Jinja2==2.11.1 netaddr==0.7.19 humanfriendly==8.1 openshift==0.11.1 paramiko==2.7.1 \
+ && pip install ansible==${VERSION_ANSIBLE} Jinja2==2.11.1 netaddr==0.7.19 humanfriendly==8.1 openshift==0.11.2 paramiko==2.7.1 \
  && curl -fo vagrant.deb $VAGRANT_PACKAGE_URL \
  && dpkg -i vagrant.deb \
  && rm -f vagrant.deb \
