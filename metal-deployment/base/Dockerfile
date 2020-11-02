@@ -1,4 +1,4 @@
-FROM python:buster
+FROM python:3.8-buster
 
 ENV VERSION_ANSIBLE=2.9.13 \
     VERSION_CT=0.9.0 \
