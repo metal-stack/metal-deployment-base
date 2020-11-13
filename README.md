@@ -4,4 +4,4 @@ This repository defines and builds some basic Dockerfiles that are used in the m
 
 | Name                  | Description                                         |
 | --------------------- | --------------------------------------------------- |
-| metal-deployment-base | Can be used when deploying metal-stack with Ansible | 
+| metal-deployment-base | Can be used when deploying metal-stack with Ansible |
