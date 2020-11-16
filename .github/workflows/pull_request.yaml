@@ -10,12 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Branch name
-      run: echo running on branch ${GITHUB_HEAD_REF##*/}
+
+    - name: Docker Login
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_REGISTRY_USER }}
+        password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+      if: github.repository_owner == 'metal-stack'
+
     - name: Build the Docker images
       run: |
-        cd metal-deployment/base
         export GITHUB_TAG_NAME=pr-${GITHUB_HEAD_REF##*/}
-        docker login -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
+        cd metal-deployment/base
         make dockerimage
+
+    - name: Push
+      run: |
+        export GITHUB_TAG_NAME=pr-${GITHUB_HEAD_REF##*/}
+        cd metal-deployment/base
         make dockerpush
+      if: github.repository_owner == 'metal-stack'
