@@ -20,7 +20,7 @@ jobs:
 
     - name: Build the Docker images
       run: |
-        export GITHUB_TAG_NAME=pr-${GITHUB_REF##*/}
+        export GITHUB_TAG_NAME=${GITHUB_REF##*/}
         cd metal-deployment/base
         make dockerimage
         make dockerpush
