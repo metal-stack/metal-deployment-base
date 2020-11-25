@@ -18,9 +18,11 @@ RUN set -x \
  && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian buster stable" \
  && apt-get update \
  && apt-get install --yes --no-install-recommends \
-        google-cloud-sdk \
-        docker-ce  \
         connect-proxy \
+        docker-ce \
+        git \
+        google-cloud-sdk \
+        make \
         python3 \
         python3-pip \
         python3-setuptools \
