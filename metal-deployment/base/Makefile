@@ -7,5 +7,11 @@ dockerimage:
 
 .PHONY: dockerpush
 dockerpush:
+	docker tag ghcr.io/metal-stack/metal-deployment-base:${DOCKER_TAG} metalstack/metal-deployment-base:${DOCKER_TAG}
+	docker tag ghcr.io/metal-stack/metal-deployment-base:${DOCKER_TAG}-vagrant metalstack/metal-deployment-base:${DOCKER_TAG}-vagrant
+
 	docker push ghcr.io/metal-stack/metal-deployment-base:${DOCKER_TAG}
 	docker push ghcr.io/metal-stack/metal-deployment-base:${DOCKER_TAG}-vagrant
+
+	docker push metalstack/metal-deployment-base:${DOCKER_TAG}
+	docker push metalstack/metal-deployment-base:${DOCKER_TAG}-vagrant
