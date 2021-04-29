@@ -1,8 +1,8 @@
 FROM debian:10
 
-ENV VERSION_ANSIBLE=2.10.5 \
+ENV VERSION_ANSIBLE=2.10.7 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.5.0
+    VERSION_HELM=3.5.4
 
 RUN set -x \
  && apt-get update \
