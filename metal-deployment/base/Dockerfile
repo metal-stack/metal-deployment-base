@@ -30,7 +30,6 @@ RUN set -x \
         python3-wheel \
         rsync \
         yamllint \
- && ln -s /usr/bin/pip3 /usr/bin/pip \
  && ln -s /usr/bin/python3 /usr/bin/python \
  && ln -s /usr/bin/python3-config /usr/bin/python-config \
  && ln -s /usr/bin/python3-doc /usr/bin/python-doc \
