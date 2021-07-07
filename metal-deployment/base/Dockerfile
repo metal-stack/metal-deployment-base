@@ -1,4 +1,4 @@
-FROM debian:10
+FROM debian:bullseye
 
 ENV VERSION_ANSIBLE=4.2.0 \
     VERSION_CT=0.9.0 \
