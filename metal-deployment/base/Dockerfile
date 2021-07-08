@@ -1,8 +1,8 @@
-FROM debian:10
+FROM debian:bullseye
 
-ENV VERSION_ANSIBLE=2.10.7 \
+ENV VERSION_ANSIBLE=4.2.0 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.5.4
+    VERSION_HELM=3.6.2
 
 RUN set -x \
  && apt-get update \
@@ -30,13 +30,12 @@ RUN set -x \
         python3-wheel \
         rsync \
         yamllint \
- && ln -s /usr/bin/pip3 /usr/bin/pip \
  && ln -s /usr/bin/python3 /usr/bin/python \
  && ln -s /usr/bin/python3-config /usr/bin/python-config \
  && ln -s /usr/bin/python3-doc /usr/bin/python-doc \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --upgrade pip \
- && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==2.11.1 netaddr==0.7.19 humanfriendly==8.1 openshift==0.11.2 paramiko==2.7.1 \
+ && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.0.1 netaddr==0.8.0 humanfriendly==9.2 openshift==0.12.1 paramiko==2.7.2 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
