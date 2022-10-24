@@ -1,9 +1,9 @@
 FROM debian:11-slim
 
-ENV VERSION_ANSIBLE=6.3.0 \
+ENV VERSION_ANSIBLE=6.5.0 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.9.4 \
-    CLOUD_SDK_VERSION=401.0.0
+    VERSION_HELM=3.10.1 \
+    CLOUD_SDK_VERSION=406.0.0
 
 ENV PATH /google-cloud-sdk/bin:$PATH
 
@@ -43,7 +43,7 @@ RUN set -x \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --upgrade pip \
- && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.0.1 netaddr==0.8.0 humanfriendly==9.2 kubernetes==24.2.0 paramiko==2.11.0 \
+ && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.0.1 netaddr==0.8.0 humanfriendly==9.2 kubernetes==24.2.0 paramiko==2.11.0 pyjwt==2.6.0 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
