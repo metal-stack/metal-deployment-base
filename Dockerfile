@@ -2,8 +2,7 @@ FROM python:3.9.15-slim
 
 ENV VERSION_ANSIBLE=6.6.0 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.10.2 \
-    CLOUD_SDK_VERSION=410.0.0
+    VERSION_HELM=3.10.2
 
 ENV PATH /google-cloud-sdk/bin:$PATH
 
@@ -19,16 +18,9 @@ RUN set -x \
         rsync \
  && apt clean \
  && apt autoclean \
- && curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && gcloud config set core/disable_usage_reporting true \
- && gcloud config set component_manager/disable_update_check true \
- && gcloud config set metrics/environment github_docker_image \
- && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --upgrade pip \
- && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.0.1 netaddr==0.8.0 humanfriendly==9.2 kubernetes==25.3.0 paramiko==2.12.0 pyjwt==2.6.0 \
+ && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.0.1 netaddr==0.8.0 humanfriendly==9.2 kubernetes==25.3.0 pyjwt==2.6.0 google-auth \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
