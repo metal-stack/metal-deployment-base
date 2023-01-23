@@ -1,8 +1,8 @@
-FROM python:3.9.15-slim
+FROM python:3.11.1-slim
 
-ENV VERSION_ANSIBLE=6.6.0 \
+ENV VERSION_ANSIBLE=6.7.0 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.10.2
+    VERSION_HELM=3.11.0
 
 ENV PATH /google-cloud-sdk/bin:$PATH
 
