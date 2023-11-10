@@ -17,8 +17,6 @@ RUN set -x \
         make \
         openssh-client \
         rsync \
- && apt clean \
- && apt autoclean \
  && curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
@@ -33,7 +31,7 @@ RUN set -x \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
- && rm -rf /var/cache/apt/* /tmp/*
+ && rm -rf /tmp/*
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
 
