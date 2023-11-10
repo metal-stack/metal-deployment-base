@@ -25,6 +25,7 @@ RUN set -x \
  && gcloud config set component_manager/disable_update_check true \
  && gcloud config set metrics/environment github_docker_image \
  && gcloud components install gke-gcloud-auth-plugin \
+ && rm -rf /google-cloud-sdk/.install/.backup \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
