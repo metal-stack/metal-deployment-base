@@ -27,7 +27,15 @@ RUN set -x \
  && gcloud components install gke-gcloud-auth-plugin \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
- && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.1.2 netaddr==0.8.0 humanfriendly==9.2 jmespath==1.0.1 kubernetes==25.3.0 pyjwt==2.8.0 passlib==1.7.4 \
+ && python3 -m pip install --disable-pip-version-check --no-cache-dir \
+        ansible==${VERSION_ANSIBLE} \
+        Jinja2==3.1.2 \
+        netaddr==0.8.0 \
+        humanfriendly==9.2 \
+        jmespath==1.0.1 \
+        kubernetes==25.3.0 \
+        pyjwt==2.8.0 \
+        passlib==1.7.4 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
