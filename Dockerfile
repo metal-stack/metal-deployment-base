@@ -17,8 +17,7 @@ RUN set -x \
         make \
         openssh-client \
         rsync \
- && apt clean \
- && apt autoclean \
+ && rm -rf /var/lib/apt/lists/* \
  && curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
@@ -26,14 +25,22 @@ RUN set -x \
  && gcloud config set component_manager/disable_update_check true \
  && gcloud config set metrics/environment github_docker_image \
  && gcloud components install gke-gcloud-auth-plugin \
+ && rm -rf /google-cloud-sdk/.install/.backup \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
- && python3 -m pip install --upgrade pip \
- && python3 -m pip install ansible==${VERSION_ANSIBLE} Jinja2==3.1.2 netaddr==0.8.0 humanfriendly==9.2 jmespath==1.0.1 kubernetes==25.3.0 pyjwt==2.8.0 passlib==1.7.4 \
+ && python3 -m pip install --disable-pip-version-check --no-cache-dir \
+        ansible==${VERSION_ANSIBLE} \
+        Jinja2==3.1.2 \
+        netaddr==0.8.0 \
+        humanfriendly==9.2 \
+        jmespath==1.0.1 \
+        kubernetes==25.3.0 \
+        pyjwt==2.8.0 \
+        passlib==1.7.4 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
- && rm -rf /var/cache/apt/* /tmp/*
+ && rm -rf /tmp/*
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
 
