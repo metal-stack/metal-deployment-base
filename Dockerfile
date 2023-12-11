@@ -1,7 +1,6 @@
 FROM python:3.11-slim
 
-ENV VERSION_ANSIBLE=8.4.0 \
-    VERSION_CT=0.9.0 \
+ENV VERSION_CT=0.9.0 \
     VERSION_HELM=3.12.3 \
     CLOUD_SDK_VERSION=445.0.0
 
@@ -29,7 +28,8 @@ RUN set -x \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible==${VERSION_ANSIBLE} \
+        ansible==8.4.0 \
+        ansible-core==2.15.4 \
         Jinja2==3.1.2 \
         netaddr==0.8.0 \
         humanfriendly==9.2 \
