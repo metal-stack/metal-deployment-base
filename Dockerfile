@@ -28,8 +28,8 @@ RUN set -x \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible==8.7.0 \
-        ansible-core==2.15.9 \
+        ansible==9.2.0 \
+        ansible-core==2.16.3 \
         Jinja2==3.1.3 \
         netaddr==1.1.0 \
         humanfriendly==10.0 \
