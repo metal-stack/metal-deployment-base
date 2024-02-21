@@ -27,6 +27,7 @@ RUN set -x \
  && rm -rf /google-cloud-sdk/.install/.backup \
  && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
+ && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible==9.2.0 \
         ansible-core==2.16.3 \
