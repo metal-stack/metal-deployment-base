@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.12.3 \
+    VERSION_HELM=3.14.2 \
     CLOUD_SDK_VERSION=464.0.0
 
 ENV PATH /google-cloud-sdk/bin:$PATH
