@@ -29,7 +29,7 @@ RUN set -x \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible==9.2.0 \
+        ansible==8.7.0 \
         ansible-core==2.15.4 \
         Jinja2==3.1.3 \
         netaddr==1.1.0 \
