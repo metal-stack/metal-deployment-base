@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 ENV VERSION_CT=0.9.0 \
     VERSION_HELM=3.12.3 \
