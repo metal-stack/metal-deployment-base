@@ -30,7 +30,7 @@ RUN set -x \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible==8.7.0 \
-        ansible-core==2.15.4 \
+        ansible-core==2.15.7 \
         Jinja2==3.1.3 \
         netaddr==1.1.0 \
         humanfriendly==10.0 \
