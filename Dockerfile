@@ -1,8 +1,8 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.12.3 \
-    CLOUD_SDK_VERSION=464.0.0
+    VERSION_HELM=3.14.2 \
+    CLOUD_SDK_VERSION=465.0.0
 
 ENV PATH /google-cloud-sdk/bin:$PATH
 
@@ -30,7 +30,7 @@ RUN set -x \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible==9.2.0 \
-        ansible-core==2.16.3 \
+        ansible-core==2.15.4 \
         Jinja2==3.1.3 \
         netaddr==1.1.0 \
         humanfriendly==10.0 \
