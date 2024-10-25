@@ -1,10 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.12.3 \
-    CLOUD_SDK_VERSION=465.0.0
-
-ENV PATH /google-cloud-sdk/bin:$PATH
+    VERSION_HELM=3.12.3
 
 RUN set -x \
  && apt-get update \
@@ -17,15 +14,6 @@ RUN set -x \
         openssh-client \
         rsync \
  && rm -rf /var/lib/apt/lists/* \
- && curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
- && gcloud config set core/disable_usage_reporting true \
- && gcloud config set component_manager/disable_update_check true \
- && gcloud config set metrics/environment github_docker_image \
- && gcloud components install gke-gcloud-auth-plugin \
- && rm -rf /google-cloud-sdk/.install/.backup \
- && gcloud --version \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
@@ -46,3 +34,19 @@ RUN set -x \
 COPY ansible.cfg /etc/ansible/ansible.cfg
 
 ENTRYPOINT []
+
+FROM base AS gcloud
+
+ENV CLOUD_SDK_VERSION=465.0.0
+
+ENV PATH=/google-cloud-sdk/bin:$PATH
+
+RUN  curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+ && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+ && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+ && gcloud config set core/disable_usage_reporting true \
+ && gcloud config set component_manager/disable_update_check true \
+ && gcloud config set metrics/environment github_docker_image \
+ && gcloud components install gke-gcloud-auth-plugin \
+ && rm -rf /google-cloud-sdk/.install/.backup \
+ && gcloud --version \
