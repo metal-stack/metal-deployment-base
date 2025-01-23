@@ -48,4 +48,4 @@ RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cl
  && gcloud config set metrics/environment github_docker_image \
  && gcloud components install gke-gcloud-auth-plugin \
  && rm -rf /google-cloud-sdk/.install/.backup \
- && gcloud --version \
+ && gcloud --version
