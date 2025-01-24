@@ -1,7 +1,7 @@
 FROM python:3.11-slim AS minimal
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.12.3
+    VERSION_HELM=3.16.4
 
 RUN set -x \
  && apt-get update \
@@ -36,7 +36,7 @@ ENTRYPOINT []
 
 FROM minimal AS gcloud
 
-ENV CLOUD_SDK_VERSION=465.0.0
+ENV CLOUD_SDK_VERSION=507.0.0
 
 ENV PATH=/google-cloud-sdk/bin:$PATH
 
