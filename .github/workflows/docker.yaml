@@ -40,9 +40,18 @@ jobs:
         [ "${GITHUB_EVENT_NAME}" == 'release' ] && echo "tag=${GITHUB_REF##*/}" >> $GITHUB_ENV || true
         [ "${GITHUB_EVENT_NAME}" == 'push' ] && echo "tag=latest" >> $GITHUB_ENV || true
 
-    - name: Build and push image
-      uses: docker/build-push-action@v5
+    - name: Build and push minimal image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}-minimal
+        target: minimal
+
+    - name: Build and push gcloud image
+      uses: docker/build-push-action@v6
       with:
         context: .
         push: true
         tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
+        target: gcloud
