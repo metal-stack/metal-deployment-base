@@ -31,6 +31,7 @@ RUN set -x \
  && mv ct /usr/local/bin/
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
+COPY gai.conf /etc/gai.conf
 
 ENTRYPOINT []
 
