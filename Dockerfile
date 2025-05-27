@@ -17,21 +17,23 @@ RUN set -x \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible==8.4.0 \
         ansible-core==2.15.4 \
-        Jinja2==3.1.3 \
-        netaddr==1.1.0 \
+        ansible==8.4.0 \
         humanfriendly==10.0 \
+        Jinja2==3.1.3 \
         jmespath==1.0.1 \
         kubernetes==25.3.0 \
-        pyjwt==2.8.0 \
+        netaddr==1.1.0 \
+        opencontainers==0.0.14 \
         passlib==1.7.4 \
+        pyjwt==2.8.0 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
 COPY gai.conf /etc/gai.conf
+COPY ansible /usr/share/ansible
 
 ENTRYPOINT []
 
