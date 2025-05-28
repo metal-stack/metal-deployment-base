@@ -171,6 +171,8 @@ class ActionModule(ActionBase):
 
 
     def _download_blob(self, address, default_name, reference, layer_media_type):
+        # TODO: optional verify signature of the oci artifact with cosign
+
         opts = [WithDefaultName(default_name)]
         if self._registry_username and self._registry_password:
             opts.append(WithUsernamePassword(username=self._registry_username, password=self._registry_password))
