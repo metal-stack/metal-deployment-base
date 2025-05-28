@@ -90,6 +90,8 @@ class ActionModule(ActionBase):
             RELEASE_VECTOR_MEDIA_TYPE,
         )
 
+        # TODO: recurse
+
         return _extract_tar_gzip_file(blob.content, self._release_vector_file_name)
 
 
@@ -157,6 +159,8 @@ def _download_blob(address, default_name, reference, layer_media_type):
         "/v2/<name>/manifests/<reference>",
         WithReference(reference),
     ).SetHeader("Accept", opencontainersv1.MediaTypeImageManifest)
+
+    # TODO: also allow WithUserAuth("myuser", "mypass") and iterate through credentials in case of unauthorized
 
     try:
         response = client.Do(req)
