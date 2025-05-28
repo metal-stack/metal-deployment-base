@@ -53,6 +53,7 @@ class ActionModule(ActionBase):
         self._release_vector_file_name = module_args.get("file_name", "release.yaml")
         self._registry_username        = module_args.get("username", task_vars.get("metal_stack_release_vector_registry_username"))
         self._registry_password        = module_args.get("password", task_vars.get("metal_stack_release_vector_registry_password"))
+        self._recurse                  = module_args.get("recurse", task_vars.get("metal_stack_release_vector_recurse", True))
         self.registry_scheme           = module_args.get("registry_scheme", "https")
         install_roles                  = module_args.get("install_ansible_roles", True)
 
@@ -100,20 +101,21 @@ class ActionModule(ActionBase):
 
         vectors.append(release_vector)
 
-        for vector_name, subvector in release_vector.get("vectors", {}).items():
-            ref = subvector.get("oci")
+        if self._recurse:
+            for vector_name, subvector in release_vector.get("vectors", {}).items():
+                ref = subvector.get("oci")
 
-            # FIXME: just for demonstration purposes
-            if vector_name == "metal-stack":
-                ref = "ghcr.io/metal-stack/releases:develop"
+                # FIXME: just for demonstration purposes
+                if vector_name == "metal-stack":
+                    ref = "ghcr.io/metal-stack/releases:develop"
 
-            if not ref:
-                display.display("- Nested release vector %s has no oci ref, skipping" % (vector_name), color=C.COLOR_SKIP)
-                continue
+                if not ref:
+                    display.display("- Nested release vector %s has no oci ref, skipping" % (vector_name), color=C.COLOR_SKIP)
+                    continue
 
-            registry, registry_namespace, version = _parse_oci_ref(ref, scheme=self.registry_scheme)
+                registry, registry_namespace, version = _parse_oci_ref(ref, scheme=self.registry_scheme)
 
-            vectors = self._download_release_vectors(registry, registry_namespace, version, vectors)
+                vectors = self._download_release_vectors(registry, registry_namespace, version, vectors)
 
         return vectors
 
