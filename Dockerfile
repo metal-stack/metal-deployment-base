@@ -19,6 +19,7 @@ RUN set -x \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible-core==2.15.4 \
         ansible==8.4.0 \
+        bcrypt==4.3.0 \
         humanfriendly==10.0 \
         Jinja2==3.1.3 \
         jmespath==1.0.1 \
