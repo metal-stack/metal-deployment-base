@@ -19,7 +19,8 @@ RUN set -x \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible-core==2.18.7 \
         ansible==11.7.0 \
-        bcrypt==4.3.0 \
+        # unfortunately we cannot go to the latest bcrypt because passlib uses it wrong and it throws some confusing output, see: https://github.com/pyca/bcrypt/issues/684
+        bcrypt==4.0.1 \
         humanfriendly==10.0 \
         Jinja2==3.1.3 \
         jmespath==1.0.1 \
