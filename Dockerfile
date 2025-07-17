@@ -26,6 +26,7 @@ RUN set -x \
         jmespath==1.0.1 \
         kubernetes==33.1.0 \
         netaddr==1.1.0 \
+        opencontainers==0.0.14 \
         passlib==1.7.4 \
         pyjwt==2.10.1 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
