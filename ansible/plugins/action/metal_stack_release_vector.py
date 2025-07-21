@@ -4,10 +4,9 @@
 import tarfile
 import tempfile
 import json
+import os
 
-from os import path
 from io import BytesIO
-from pathlib import Path
 from yaml import safe_load
 from urllib.parse import urlparse
 from traceback import format_exc
@@ -18,13 +17,15 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils._text import to_native
 from ansible.playbook.role import Role
 from ansible.playbook.role.include import RoleInclude
+from ansible.errors import AnsibleError
 from ansible import constants as C
 
 
 HAS_OPENCONTAINERS = True
 try:
-    from opencontainers.distribution.reggie import NewClient, WithReference, WithDigest, WithDefaultName, WithUsernamePassword # type: ignore[import]
-    import opencontainers.image.v1 as opencontainersv1 # type: ignore[import]
+    # type: ignore[import]
+    from opencontainers.distribution.reggie import NewClient, WithReference, WithDigest, WithDefaultName, WithUsernamePassword
+    import opencontainers.image.v1 as opencontainersv1  # type: ignore[import]
 except ImportError as ex:
     HAS_OPENCONTAINERS = False
 
@@ -49,17 +50,22 @@ class ActionModule(ActionBase):
 
         self._supports_check_mode = True
 
-        vectors = self._task.args.get('vectors', task_vars.get('metal_stack_release_vector'))
-        cache_enabled = boolean(self._task.args.get('cache', task_vars.get('metal_stack_release_vector_cache', True)), strict=False)
-        install_roles = boolean(self._task.args.get('install_roles', task_vars.get('metal_stack_release_vector_install_roles', True)), strict=False)
+        vectors = self._task.args.get(
+            'vectors', task_vars.get('metal_stack_release_vectors'))
+        cache_enabled = boolean(self._task.args.get('cache', task_vars.get(
+            'metal_stack_release_vector_cache', True)), strict=False)
+        install_roles = boolean(self._task.args.get('install_roles', task_vars.get(
+            'metal_stack_release_vector_install_roles', True)), strict=False)
 
         if not vectors:
             result["skipped"] = True
+            result["msg"] = "no release vectors were provided"
             return result
 
-        if cache_enabled and path.isfile(self._cache_file_path()):
+        if cache_enabled and os.path.isfile(self._cache_file_path()):
             result["changed"] = False
             result["ansible_facts"] = json.safe_load(self._cache_file_path())
+            display.vvv("- Returning cache from %s" % self._cache_file_path)
             return result
 
         if not isinstance(vectors, list):
@@ -71,22 +77,19 @@ class ActionModule(ActionBase):
         ansible_facts = {}
 
         for vector in vectors:
-            args = task_vars | vector
-
-            resolver = RemoteResolver(module=self, args=args)
-
             kwargs = dict(
                 install_roles=install_roles,
+                oci_registry_username=vector.get(
+                    "oci_registry_username"),
+                oci_registry_password=vector.get(
+                    "oci_registry_password"),
+                oci_registry_scheme=vector.get(
+                    "oci_registry_scheme", 'https')
             )
-            if vector.get("oci_registry_username"):
-                kwargs["oci_registry_username"] = vector.get("oci_registry_username")
-            if vector.get("oci_registry_password"):
-                kwargs["oci_registry_password"] = vector.get("oci_registry_password")
-            if vector.get("oci_registry_scheme"):
-                kwargs["oci_registry_scheme"] = vector.get("oci_registry_scheme")
 
             try:
-                data = resolver.resolve(**kwargs)
+                data = RemoteResolver(
+                    module=self, task_vars=task_vars, args=vector).resolve(**kwargs)
             except Exception as e:
                 result["failed"] = True
                 result["msg"] = "error resolving yaml"
@@ -95,172 +98,215 @@ class ActionModule(ActionBase):
                 return result
 
             for k, v in data.items():
-                if task_vars.get(k) is not None or ansible_facts.get(k) is not None:
-                    # skip when already defined
+                if task_vars.get(k) is not None:
+                    # skip if already defined, this allows users to provide overwrites
+                    continue
+
+                if ansible_facts.get(k) is not None:
+                    display.warning(
+                        "variable %s was resolved more than once, using first defined value (%s)" % (k, ansible_facts.get(k)))
                     continue
 
                 ansible_facts[k] = v
 
         result["ansible_facts"] = ansible_facts
+
         if cache_enabled:
-            with open(self._cache_file_path(), 'rw') as vector:
+            with open(self._cache_file_path(), 'w') as vector:
                 vector.write(json.dumps(ansible_facts))
+                display.vvv("- Written cache file to %s" %
+                            self._cache_file_path)
 
         return result
 
     @staticmethod
     def _cache_file_path():
-        return path.join(tempfile.gettempdir(), ActionModule.CACHE_FILE)
+        return os.path.join(tempfile.gettempdir(), ActionModule.CACHE_FILE)
 
 
 class RemoteResolver():
-    def __init__(self, module, args):
+    def __init__(self, module, task_vars, args):
         self._module = module
+        self._templar = module._templar
+        self._task_vars = task_vars.copy()
+        self._args = args.copy()
 
-        _args = args.copy()
-
-        for _, defaults in _args.get("_cached_role_defaults", dict()).items():
-            _args = _args | defaults
-
-        self._cached_role_defaults = dict()
-
-        if 'from_role_defaults' in _args:
-            if not isinstance(_args["from_role_defaults"], list):
-                raise Exception("role defaults must be provided as a list")
-
-            for role_name in _args["from_role_defaults"]:
-                if role_name in self._cached_role_defaults:
-                    continue
-
-                res = self.load_role_default_vars(module=module, role_name=role_name)
-                self._cached_role_defaults[role_name] = res
-                _args = _args | res
-
-        meta_var = module._templar.template(_args.pop("meta_var", None))
-
-        if meta_var:
-            meta_args = _args.get(meta_var)
-            if not meta_args:
-                raise Exception("""the meta variable with name "%s" is not defined, please provide it through inventory, role defaults or module args""" % meta_var)
-
-            _args = _args | meta_args
-
-        self._url = module._templar.template(_args.pop("url", None))
-        if not self._url:
+    def resolve(self, **kwargs):
+        # download release vector
+        url = self._templar.template(self._args.pop("url", None))
+        if not url:
             raise Exception("url is required")
 
-        self._mapping = _args.pop("mapping", None)
-        if not self._mapping:
-            raise Exception("mapping is required for %s" % self._url)
+        content = ContentLoader(url, **kwargs).load()
 
-        self._nested = _args.pop("nested", list()) if _args.pop("recursive", True) else list()
-        self._replacements = _args.pop("replace", list())
-
-        self._args = _args
-
-
-    @staticmethod
-    def resolve(url, module, args, **kwargs):
-        loader = ContentLoader(url, **kwargs)
-
-        content = loader.load()
-
-        # setup the ansible-roles
-        if kwargs.get('install_roles', True):
-            for role_name, spec in content.get("ansible-roles", {}).items():
-                role_path = path.join(str(Path.home()), "/.ansible/roles", role_name)
-
-                # TODO: check for overwrites
-                role_version = spec.get("version")
-                role_ref = spec.get("oci")
-                role_repository = spec.get("repository")
-
-                if not role_version:
-                    raise Exception("no version specified for role " + role_name)
-
-                if not role_ref and not role_repository:
-                    display.display("- %s has no oci ref nor repository defined, skipping" % (role_name), color=C.COLOR_SKIP)
-                    continue
-
-                if path.isdir(role_path):
-                    display.display("- %s already installed in %s, skipping" % (role_name, role_path), color=C.COLOR_SKIP)
-                    continue
-
-                display.display("- Installing %s (%s) to %s" % (role_name, role_version, role_path), color=C.COLOR_CHANGED)
-
-                if role_ref:
-                    ContentLoader(url, tar_dest=role_path, **kwargs).install_ansible_role(role_name=role_name, spec=spec)
-                else:
-                    try:
-                        module._execute_module(module_name='ansible.builtin.git', module_args={
-                            'repo': role_repository,
-                            'dest': role_path,
-                        }, task_vars=module.task_vars, tmp=None)
-                    except Exception as e:
-                        raise Exception("error cloning git repository: %s" % to_native(e))
-
-        resolver = RemoteResolver(module=module, args=args)
-
-        # apply potential replacements
-        for r in resolver._replacements:
+        # apply replacements
+        replacements = self._args.pop("replace", list())
+        for r in replacements:
             if r.get("key") is None or r.get("old") is None or r.get("new") is None:
-                raise Exception("replace must contain and dict with the keys for 'key', 'old' and 'new'")
-            resolver.replace_key_value(content, r.get("key"), r.get("old"), r.get("new"))
+                raise Exception(
+                    "replace must contain and dict with the keys for 'key', 'old' and 'new'")
+            self.replace_key_value(content, r.get(
+                "key"), r.get("old"), r.get("new"))
+
+        # setup ansible-roles of release vector
+        self._install_ansible_roles(
+            role_dict=content.get("ansible-roles", {}), **kwargs)
+
+        # find meta_var in variable sources (task_vars and role default vars)
+        vars = self._task_vars | self._load_role_default_vars()
+
+        meta_var = self._templar.template(self._args.pop("meta_var", None))
+
+        if meta_var:
+            meta_args = vars.get(meta_var)
+            if not meta_args:
+                raise Exception(
+                    """the meta variable with name "%s" is not defined, please provide it through inventory, role defaults or module args""" % meta_var)
+
+            vars = vars | meta_args
+
+        # map to variables
+        mapping = vars.pop("mapping", None)
+        if not mapping:
+            raise Exception("mapping is required for %s" % url)
 
         result = dict()
 
-        # map to variables
-        for k, path in resolver._mapping.items():
+        for k, path in mapping.items():
             try:
-                value = resolver.dotted_path(content, path)
+                value = self.dotted_path(content, path)
             except KeyError as e:
                 display.warning(
                     """mapping path %s does not exist in %s: %s""" % (
-                        path, resolver._url, to_native(e)))
+                        path, url, to_native(e)))
                 continue
 
             result[k] = value
 
         # resolve nested vectors
-        for n in resolver._nested:
+        nested = vars.pop("nested", list()) if vars.pop(
+            "recursive", True) else list()
+
+        for n in nested:
             path = n.pop("url_path", None)
             if not path:
                 raise Exception("nested entries must contain an url_path")
 
-            try:
-                url = resolver.dotted_path(content, path)
-            except KeyError as e:
-                raise Exception("""url_path "%s" could not resolved in %s""" % (path, resolver._url))
+            args = self._args.copy()
 
-            args = resolver._args.copy()
+            try:
+                args["url"] = self.dotted_path(content, path)
+            except KeyError as e:
+                raise Exception(
+                    """url_path "%s" could not resolved in %s""" % (path, url))
+
             args["meta_var"] = n.pop("meta_var", None)
             args["mapping"] = n.pop("mapping", None)
             args["nested"] = n.pop("nested", list())
             args["recursive"] = n.pop("recursive", True)
-            args["replace"] = n.pop("replace", list()) + resolver._replacements
-            args["_cached_role_defaults"] = resolver._cached_role_defaults
+            args["replace"] = n.pop("replace", list()) + replacements
+            args["_cached_role_defaults"] = self._args.get(
+                "_cached_role_defaults", dict())
 
-            results = RemoteResolver.resolve(url=url, module=module, args=args)
+            results = RemoteResolver(
+                module=self._module, task_vars=self._task_vars, args=args).resolve(**kwargs)
 
             for k, v in results.items():
                 if result.get(k) is not None:
-                    # nested values do not overwrite the parent values
                     continue
 
                 result[k] = v
 
         return result
 
+    def _install_ansible_roles(self, role_dict, **kwargs):
+        if not kwargs.get('install_roles', True):
+            return
 
-    @staticmethod
-    def load_role_default_vars(module, role_name):
-        i = RoleInclude.load(role_name, play=module._task.get_play(),
-                             current_role_path=module._task.get_path(),
-                             variable_manager=module._task.get_variable_manager(),
-                             loader=module._task.get_loader(), collection_list=None)
+        for role_name, spec in role_dict.items():
+            role_ref = spec.get("oci")
+            role_repository = spec.get("repository")
 
-        return Role().load(role_include=i, play=module._task.get_play()).get_default_vars()
+            # find aliases
+            aliases = self._args.get("role_aliases", list())
+            for alias in aliases:
+                if alias.get("repository") == role_repository:
+                    role_name = alias.get("alias")
 
+            role_version = spec.get("version")
+
+            role_version_overwrite = self._task_vars.get(
+                role_name.replace("-", "_").lower() + "_version")
+            if role_version_overwrite:
+                role_version = role_version_overwrite
+
+            if not role_version:
+                raise Exception("no version specified for role " + role_name)
+
+            role_path = os.path.join(C.DEFAULT_ROLES_PATH[0], role_name)
+
+            if not role_ref and not role_repository:
+                display.display(
+                    "- %s has no oci ref nor repository defined, skipping" % (role_name), color=C.COLOR_SKIP)
+                continue
+
+            if os.path.isdir(role_path):
+                display.display("- %s already installed in %s, skipping" %
+                                (role_name, role_path), color=C.COLOR_SKIP)
+                continue
+
+            display.display("- Installing %s (%s) from %s to %s" % (role_name, role_version,
+                            role_ref if role_ref else role_repository, role_path), color=C.COLOR_CHANGED)
+
+            if role_ref:
+                OciLoader(url=OciLoader.OCI_PREFIX + role_ref + ":" + role_version,
+                          tar_dest=os.path.dirname(role_path), **kwargs).load()
+            else:
+                try:
+                    self._module._execute_module(module_name='ansible.builtin.git', module_args={
+                        'repo': role_repository,
+                        'dest': role_path,
+                        'depth': 1,
+                    }, task_vars=self._task_vars, tmp=None)
+                except Exception as e:
+                    raise Exception(
+                        "error cloning git repository: %s" % to_native(e))
+
+    def _load_role_default_vars(self):
+        defaults = dict()
+
+        cached_roles = self._args.get("_cached_role_defaults", dict())
+        for role_name, cached_defaults in cached_roles.items():
+
+            defaults = defaults | cached_defaults
+
+        for role_name in self._args.get("include_role_defaults", list()):
+            if role_name in cached_roles:
+                continue
+
+            try:
+                i = RoleInclude.load(role_name, play=self._module._task.get_play(),
+                                     current_role_path=self._module._task.get_path(),
+                                     variable_manager=self._module._task.get_variable_manager(),
+                                     loader=self._module._task.get_loader(), collection_list=None)
+
+                included_defaults = Role().load(
+                    role_include=i, play=self._module._task.get_play()).get_default_vars()
+
+            except AnsibleError as e:
+                display.v(
+                    "- Role %s could not be included, maybe because it is provided by nested release vectors and not yet downloaded" % role_name)
+                continue
+
+            display.display("- Included role default vars of %s into lookup" %
+                            role_name, color=C.COLOR_OK)
+
+            cached_roles[role_name] = included_defaults
+            defaults = defaults | included_defaults
+
+        self._args["_cached_role_defaults"] = cached_roles
+
+        return defaults
 
     @staticmethod
     def dotted_path(vector, path):
@@ -268,7 +314,6 @@ class RemoteResolver():
         for p in path.split("."):
             value = value[p]
         return value
-
 
     @staticmethod
     def replace_key_value(data, key, old, new):
@@ -279,6 +324,9 @@ class RemoteResolver():
             to_replace = data[key]
             if isinstance(to_replace, str):
                 data[key] = to_replace.replace(old, new)
+                if data[key] != to_replace:
+                    display.vvv("- Replaced value %s with %s" %
+                                (to_replace, data[key]))
 
         for _, v in data.items():
             if isinstance(v, dict):
@@ -290,10 +338,11 @@ class ContentLoader():
         if url.startswith(OciLoader.OCI_PREFIX):
             self._loader = OciLoader(url, **kwargs)
         else:
-            self._loader = UrlLoader(url)
+            self._loader = UrlLoader(url, **kwargs)
 
     def load(self) -> dict:
-        display.v("loading remote content from %s" % self._loader._url)
+        display.display("- Loading remote content from %s" %
+                        self._loader._url, color=C.COLOR_OK)
         raw = self._loader.load()
         return safe_load(raw)
 
@@ -315,13 +364,15 @@ class OciLoader():
         self._url = url[len(OciLoader.OCI_PREFIX):]
         self._member = kwargs.get("tar_member_file_name", "release.yaml")
         self._dest = kwargs.get("tar_dest", None)
-        self._registry, self._namespace, self._version = self._parse_oci_ref(self._url, scheme=kwargs.get("oci_registry_scheme", "https"))
+        self._registry, self._namespace, self._version = self._parse_oci_ref(
+            self._url, scheme=kwargs.get("oci_registry_scheme", "https"))
         self._username = kwargs.get("oci_registry_username")
         self._password = kwargs.get("oci_registry_password")
 
     def load(self):
         if not HAS_OPENCONTAINERS:
-            raise ImportError("opencontainers must be installed in order to resolve metal-stack oci release vectors")
+            raise ImportError(
+                "opencontainers must be installed in order to resolve metal-stack oci release vectors")
 
         blob, media_type = self._download_blob()
 
@@ -335,11 +386,12 @@ class OciLoader():
     def _download_blob(self):
         opts = [WithDefaultName(self._namespace)]
         if self._username and self._password:
-            opts.append(WithUsernamePassword(username=self._username, password=self._password))
+            opts.append(WithUsernamePassword(
+                username=self._username, password=self._password))
 
         client = NewClient(self._registry,
-            *opts
-        )
+                           *opts
+                           )
 
         req = client.NewRequest(
             "GET",
@@ -351,7 +403,8 @@ class OciLoader():
             response = client.Do(req)
             response.raise_for_status()
         except Exception as e:
-            raise Exception("the download of the release vector raised an error: %s" % to_native(e))
+            raise Exception(
+                "the download of the release vector raised an error: %s" % to_native(e))
 
         manifest = response.json()
 
@@ -362,7 +415,8 @@ class OciLoader():
                 break
 
         if not target:
-            raise Exception("no layer with media type %s or %s found in oci release vector" % (self.RELEASE_VECTOR_MEDIA_TYPE, self.ANSIBLE_ROLE_MEDIA_TYPE))
+            raise Exception("no layer with media type %s or %s found in oci release vector" % (
+                self.RELEASE_VECTOR_MEDIA_TYPE, self.ANSIBLE_ROLE_MEDIA_TYPE))
 
         req = client.NewRequest(
             "GET",
@@ -376,10 +430,10 @@ class OciLoader():
             blob = client.Do(req)
             blob.raise_for_status()
         except Exception as e:
-            raise Exception("the download of the release vector layer raised an error: %s" % to_native(e))
+            raise Exception(
+                "the download of the release vector layer raised an error: %s" % to_native(e))
 
         return blob.content, layer["mediaType"]
-
 
     @staticmethod
     def _parse_oci_ref(full_ref, scheme='https'):
@@ -390,7 +444,6 @@ class OciLoader():
         url = urlparse("%s://%s" % (scheme, ref))
         return "%s://%s" % (scheme, url.netloc), url.path.removeprefix('/'), tag
 
-
     @staticmethod
     def _extract_tar_gzip_file(bytes, member):
         with tarfile.open(fileobj=BytesIO(bytes), mode='r:gz') as tar:
@@ -398,8 +451,8 @@ class OciLoader():
                 try:
                     return f.read().decode('utf-8')
                 except Exception as e:
-                    raise Exception("error extracting tar member from oci layer: %s" % to_native(e))
-
+                    raise Exception(
+                        "error extracting tar member from oci layer: %s" % to_native(e))
 
     @staticmethod
     def _extract_tar_gzip(bytes, dest):
@@ -407,4 +460,5 @@ class OciLoader():
             try:
                 tar.extractall(dest, tar.getmembers())
             except Exception as e:
-                raise Exception("error extracting tar from oci layer: %s" % to_native(e))
+                raise Exception(
+                    "error extracting tar from oci layer: %s" % to_native(e))

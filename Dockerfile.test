@@ -1,0 +1,4 @@
+FROM metal-deployment-base
+
+COPY example-playbook.yaml .
+COPY ansible /usr/share/ansible
