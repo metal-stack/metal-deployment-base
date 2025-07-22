@@ -1,7 +1,8 @@
 FROM python:3.11-slim AS minimal
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.16.4
+    VERSION_HELM=3.16.4 \
+    METAL_ROLES_VERSION=metal-stack-release-vector-module
 
 RUN set -x \
  && apt-get update \
@@ -32,9 +33,15 @@ RUN set -x \
  && chmod +x ct \
  && mv ct /usr/local/bin/
 
+RUN mkdir -p /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
+ && cd /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
+ && mkdir action modules \
+ && curl -Lo action/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/action_plugins/metal_stack_release_vector.py \
+ && curl -Lo modules/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/library/metal_stack_release_vector.py \
+ && chmod +x action/metal_stack_release_vector.py modules/metal_stack_release_vector.py
+
 COPY ansible.cfg /etc/ansible/ansible.cfg
 COPY gai.conf /etc/gai.conf
-COPY ansible /usr/share/ansible
 
 ENTRYPOINT []
 
