@@ -148,6 +148,7 @@ class RemoteResolver():
         self._role_aliases = args.pop("role_aliases", list())
         self._install_roles = args.pop('install_roles', self._task_vars.get(
             'metal_stack_release_vector_install_roles', True))
+        self._ansible_roles_path = args.pop('ansible_roles_path', None)
 
         if args:
             raise Exception("unknown parameters used for %s: %s" %
@@ -167,12 +168,25 @@ class RemoteResolver():
 
         # setup ansible-roles of release vector
         if self._install_roles:
-            self._install_ansible_roles(
-                role_dict=content.get("ansible-roles", {}), **kwargs)
+            if self._ansible_roles_path:
+                try:
+                    role_dict = self.dotted_path(
+                        content, self._ansible_roles_path)
+                except KeyError:
+                    raise Exception("given ansible-roles path %s not found in %s" %
+                                    (self._ansible_roles_path, self._url))
+            else:
+                role_dict = content.get("ansible-roles", {})
+
+            self._install_ansible_roles(role_dict=role_dict, **kwargs)
 
         # find mapping_path in variable sources (task_vars and role default vars)
-        mapping = self.dotted_path(
-            self._task_vars | self._load_role_default_vars(), self._mapping_path)
+        try:
+            mapping = self.dotted_path(
+                self._task_vars | self._load_role_default_vars(), self._mapping_path)
+        except KeyError:
+            raise Exception(
+                "no mapping not found in any variables at %s" % self._mapping_path)
 
         # map to variables
         result = dict()
@@ -180,10 +194,9 @@ class RemoteResolver():
         for k, path in mapping.items():
             try:
                 value = self.dotted_path(content, path)
-            except KeyError as e:
+            except KeyError:
                 display.warning(
-                    """path %s provided by mapping does not exist in %s: %s""" % (
-                        path, self._url, to_native(e)))
+                    """path %s provided by mapping does not exist in %s""" % (path, self._url))
                 continue
 
             result[k] = value
