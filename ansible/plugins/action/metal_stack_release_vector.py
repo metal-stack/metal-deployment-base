@@ -54,8 +54,6 @@ class ActionModule(ActionBase):
             'vectors', task_vars.get('metal_stack_release_vectors'))
         cache_enabled = boolean(self._task.args.get('cache', task_vars.get(
             'metal_stack_release_vector_cache', True)), strict=False)
-        install_roles = boolean(self._task.args.get('install_roles', task_vars.get(
-            'metal_stack_release_vector_install_roles', True)), strict=False)
 
         if not vectors:
             result["skipped"] = True
@@ -64,7 +62,8 @@ class ActionModule(ActionBase):
 
         if cache_enabled and os.path.isfile(self._cache_file_path()):
             result["changed"] = False
-            result["ansible_facts"] = json.safe_load(self._cache_file_path())
+            with open(self._cache_file_path(), 'r') as vector:
+                result["ansible_facts"] = json.load(vector)
             display.vvv("- Returning cache from %s" % self._cache_file_path)
             return result
 
@@ -78,12 +77,11 @@ class ActionModule(ActionBase):
 
         for vector in vectors:
             kwargs = dict(
-                install_roles=install_roles,
-                oci_registry_username=vector.get(
-                    "oci_registry_username"),
-                oci_registry_password=vector.get(
-                    "oci_registry_password"),
-                oci_registry_scheme=vector.get(
+                oci_registry_username=vector.pop(
+                    "oci_registry_username", None),
+                oci_registry_password=vector.pop(
+                    "oci_registry_password", None),
+                oci_registry_scheme=vector.pop(
                     "oci_registry_scheme", 'https')
             )
 
@@ -125,23 +123,42 @@ class ActionModule(ActionBase):
 
 
 class RemoteResolver():
+    _cached_role_defaults = dict()
+
     def __init__(self, module, task_vars, args):
         self._module = module
-        self._templar = module._templar
         self._task_vars = task_vars.copy()
-        self._args = args.copy()
+
+        args = args.copy()
+
+        self._url = module._templar.template(args.pop("url", None))
+        if not self._url:
+            raise Exception("url is required")
+
+        self._mapping_path = args.pop("variable_mapping_path", None)
+        if not self._mapping_path:
+            raise Exception(
+                "variable_mapping_path is required for %s" % self._url)
+
+        self._replacements = args.pop("replace", self._task_vars.get(
+            "metal_stack_release_vector_replacements", list()))
+
+        self._nested = args.pop("nested", list())
+        self._include_role_defaults = args.pop("include_role_defaults", None)
+        self._role_aliases = args.pop("role_aliases", list())
+        self._install_roles = args.pop('install_roles', self._task_vars.get(
+            'metal_stack_release_vector_install_roles', True))
+
+        if args:
+            raise Exception("unknown parameters used for %s: %s" %
+                            (self._url, args.keys()))
 
     def resolve(self, **kwargs):
         # download release vector
-        url = self._templar.template(self._args.pop("url", None))
-        if not url:
-            raise Exception("url is required")
-
-        content = ContentLoader(url, **kwargs).load()
+        content = ContentLoader(self._url, **kwargs).load()
 
         # apply replacements
-        replacements = self._args.pop("replace", list())
-        for r in replacements:
+        for r in self._replacements:
             if r.get("key") is None or r.get("old") is None or r.get("new") is None:
                 raise Exception(
                     "replace must contain and dict with the keys for 'key', 'old' and 'new'")
@@ -149,27 +166,15 @@ class RemoteResolver():
                 "key"), r.get("old"), r.get("new"))
 
         # setup ansible-roles of release vector
-        self._install_ansible_roles(
-            role_dict=content.get("ansible-roles", {}), **kwargs)
+        if self._install_roles:
+            self._install_ansible_roles(
+                role_dict=content.get("ansible-roles", {}), **kwargs)
 
-        # find meta_var in variable sources (task_vars and role default vars)
-        vars = self._task_vars | self._load_role_default_vars()
-
-        meta_var = self._templar.template(self._args.pop("meta_var", None))
-
-        if meta_var:
-            meta_args = vars.get(meta_var)
-            if not meta_args:
-                raise Exception(
-                    """the meta variable with name "%s" is not defined, please provide it through inventory, role defaults or module args""" % meta_var)
-
-            vars = vars | meta_args
+        # find mapping_path in variable sources (task_vars and role default vars)
+        mapping = self.dotted_path(
+            self._task_vars | self._load_role_default_vars(), self._mapping_path)
 
         # map to variables
-        mapping = vars.pop("mapping", None)
-        if not mapping:
-            raise Exception("mapping is required for %s" % url)
-
         result = dict()
 
         for k, path in mapping.items():
@@ -177,39 +182,26 @@ class RemoteResolver():
                 value = self.dotted_path(content, path)
             except KeyError as e:
                 display.warning(
-                    """mapping path %s does not exist in %s: %s""" % (
-                        path, url, to_native(e)))
+                    """path %s provided by mapping does not exist in %s: %s""" % (
+                        path, self._url, to_native(e)))
                 continue
 
             result[k] = value
 
         # resolve nested vectors
-        nested = vars.pop("nested", list()) if vars.pop(
-            "recursive", True) else list()
-
-        for n in nested:
+        for n in self._nested:
             path = n.pop("url_path", None)
             if not path:
                 raise Exception("nested entries must contain an url_path")
 
-            args = self._args.copy()
-
             try:
-                args["url"] = self.dotted_path(content, path)
+                n["url"] = self.dotted_path(content, path)
             except KeyError as e:
                 raise Exception(
-                    """url_path "%s" could not resolved in %s""" % (path, url))
-
-            args["meta_var"] = n.pop("meta_var", None)
-            args["mapping"] = n.pop("mapping", None)
-            args["nested"] = n.pop("nested", list())
-            args["recursive"] = n.pop("recursive", True)
-            args["replace"] = n.pop("replace", list()) + replacements
-            args["_cached_role_defaults"] = self._args.get(
-                "_cached_role_defaults", dict())
+                    """url_path "%s" does not exist in %s""" % (path, self._url))
 
             results = RemoteResolver(
-                module=self._module, task_vars=self._task_vars, args=args).resolve(**kwargs)
+                module=self._module, task_vars=self._task_vars, args=n).resolve(**kwargs)
 
             for k, v in results.items():
                 if result.get(k) is not None:
@@ -220,21 +212,18 @@ class RemoteResolver():
         return result
 
     def _install_ansible_roles(self, role_dict, **kwargs):
-        if not kwargs.get('install_roles', True):
-            return
-
         for role_name, spec in role_dict.items():
             role_ref = spec.get("oci")
             role_repository = spec.get("repository")
 
-            # find aliases
-            aliases = self._args.get("role_aliases", list())
-            for alias in aliases:
+            # lookup aliases
+            for alias in self._role_aliases:
                 if alias.get("repository") == role_repository:
                     role_name = alias.get("alias")
 
             role_version = spec.get("version")
 
+            # check for overwritten role version
             role_version_overwrite = self._task_vars.get(
                 role_name.replace("-", "_").lower() + "_version")
             if role_version_overwrite:
@@ -243,6 +232,8 @@ class RemoteResolver():
             if not role_version:
                 raise Exception("no version specified for role " + role_name)
 
+            if not C.DEFAULT_ROLES_PATH:
+                raise Exception("no default roles path configured")
             role_path = os.path.join(C.DEFAULT_ROLES_PATH[0], role_name)
 
             if not role_ref and not role_repository:
@@ -259,7 +250,7 @@ class RemoteResolver():
                             role_ref if role_ref else role_repository, role_path), color=C.COLOR_CHANGED)
 
             if role_ref:
-                OciLoader(url=OciLoader.OCI_PREFIX + role_ref + ":" + role_version,
+                OciLoader(url=role_ref + ":" + role_version,
                           tar_dest=os.path.dirname(role_path), **kwargs).load()
             else:
                 try:
@@ -275,36 +266,28 @@ class RemoteResolver():
     def _load_role_default_vars(self):
         defaults = dict()
 
-        cached_roles = self._args.get("_cached_role_defaults", dict())
-        for role_name, cached_defaults in cached_roles.items():
+        cached_roles = RemoteResolver._cached_role_defaults
 
+        for role_name, cached_defaults in cached_roles.items():
             defaults = defaults | cached_defaults
 
-        for role_name in self._args.get("include_role_defaults", list()):
-            if role_name in cached_roles:
-                continue
+        role_name = self._include_role_defaults
 
-            try:
-                i = RoleInclude.load(role_name, play=self._module._task.get_play(),
-                                     current_role_path=self._module._task.get_path(),
-                                     variable_manager=self._module._task.get_variable_manager(),
-                                     loader=self._module._task.get_loader(), collection_list=None)
+        if not role_name or role_name in cached_roles:
+            return defaults
 
-                included_defaults = Role().load(
-                    role_include=i, play=self._module._task.get_play()).get_default_vars()
+        i = RoleInclude.load(role_name, play=self._module._task.get_play(),
+                             current_role_path=self._module._task.get_path(),
+                             variable_manager=self._module._task.get_variable_manager(),
+                             loader=self._module._task.get_loader(), collection_list=None)
 
-            except AnsibleError as e:
-                display.v(
-                    "- Role %s could not be included, maybe because it is provided by nested release vectors and not yet downloaded" % role_name)
-                continue
+        included_defaults = Role().load(
+            role_include=i, play=self._module._task.get_play()).get_default_vars()
 
-            display.display("- Included role default vars of %s into lookup" %
-                            role_name, color=C.COLOR_OK)
+        cached_roles[role_name] = included_defaults
+        defaults = defaults | included_defaults
 
-            cached_roles[role_name] = included_defaults
-            defaults = defaults | included_defaults
-
-        self._args["_cached_role_defaults"] = cached_roles
+        RemoteResolver._cached_role_defaults = cached_roles
 
         return defaults
 
@@ -334,9 +317,11 @@ class RemoteResolver():
 
 
 class ContentLoader():
+    OCI_PREFIX = "oci://"
+
     def __init__(self, url, **kwargs):
-        if url.startswith(OciLoader.OCI_PREFIX):
-            self._loader = OciLoader(url, **kwargs)
+        if url.startswith(self.OCI_PREFIX):
+            self._loader = OciLoader(url[len(self.OCI_PREFIX):], **kwargs)
         else:
             self._loader = UrlLoader(url, **kwargs)
 
@@ -356,18 +341,21 @@ class UrlLoader():
 
 
 class OciLoader():
-    OCI_PREFIX = "oci://"
     RELEASE_VECTOR_MEDIA_TYPE = "application/vnd.metal-stack.release-vector.v1.tar+gzip"
     ANSIBLE_ROLE_MEDIA_TYPE = "application/vnd.metal-stack.ansible-role.v1.tar+gzip"
 
     def __init__(self, url, **kwargs):
-        self._url = url[len(OciLoader.OCI_PREFIX):]
-        self._member = kwargs.get("tar_member_file_name", "release.yaml")
-        self._dest = kwargs.get("tar_dest", None)
+        self._url = url
+        self._member = kwargs.pop("tar_member_file_name", "release.yaml")
+        self._dest = kwargs.pop("tar_dest", None)
         self._registry, self._namespace, self._version = self._parse_oci_ref(
-            self._url, scheme=kwargs.get("oci_registry_scheme", "https"))
-        self._username = kwargs.get("oci_registry_username")
-        self._password = kwargs.get("oci_registry_password")
+            self._url, scheme=kwargs.pop("oci_registry_scheme", "https"))
+        self._username = kwargs.pop("oci_registry_username", None)
+        self._password = kwargs.pop("oci_registry_password", None)
+
+        if kwargs:
+            raise Exception("unknown parameters passed to oci loader: %s" %
+                            kwargs.keys())
 
     def load(self):
         if not HAS_OPENCONTAINERS:
