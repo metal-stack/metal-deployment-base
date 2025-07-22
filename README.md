@@ -8,7 +8,7 @@ In case your deployment depends on Ansible roles that are referenced in a metal-
 
 ```bash
 # requires the metal_stack_release_vector variable to be defined in your ansible variables
-$ ansible -m metalstack.base.metal_stack_release_vector localhost
+$ ansible localhost -m metalstack.base.metal_stack_release_vector
 - Installing ansible-common (v0.6.13) to /root/.ansible/roles/ansible-common
 - Installing metal-ansible-modules (v0.2.10) to /root/.ansible/roles/metal-ansible-modules
 - Installing metal-roles (v0.15.17) to /root/.ansible/roles/metal-roles

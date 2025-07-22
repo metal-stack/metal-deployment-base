@@ -1,25 +1,14 @@
 metal_stack_release_version: develop
-cloud_release_version: develop
 
 metal_stack_release_vectors:
-  # - url: https://raw.githubusercontent.com/fi-ts/releases/{{ cloud_release_version }}/release.yaml
-  #   variable_mapping_path: cloud_release.mapping
-  #   include_role_defaults: metal-extensions-roles/defaults
-  #   nested:
-  #     - url_path: vectors.metal-stack.url
-  #       variable_mapping_path: metal_stack_release.mapping
-  #       include_role_defaults: metal-roles/common/roles/defaults
-
   - url: oci://ghcr.io/metal-stack/releases:{{ metal_stack_release_version }}
     variable_mapping_path: metal_stack_release.mapping
     include_role_defaults: metal-roles/common/roles/defaults
-
-  # - url: https://raw.githubusercontent.com/metal-stack-cloud/releases/develop/release.yaml
-  #   variable_mapping_path: metal_stack_cloud_release.mapping
-  #   include_role_defaults: metal-stack-cloud-ansible-roles/roles/defaults
-  #   role_aliases:
-  #     - repository: https://github.com/metal-stack-cloud/ansible-roles
-  #       alias: metal-stack-cloud-ansible-roles
+    oci_cosign_verify_key: |
+      -----BEGIN PUBLIC KEY-----
+      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdeAXd2namgVNDT0APmogKGwaV+Q4
+      rfe4uVgmsyBbb6TrhX5Py6x1PsonDahTvdVpbSGC7QGEjxIHdi8HnJ4Okg==
+      -----END PUBLIC KEY-----
 
 metal_stack_release_vector_replacements:
     - key: name

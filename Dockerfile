@@ -1,6 +1,7 @@
 FROM python:3.11-slim AS minimal
 
-ENV VERSION_CT=0.9.0 \
+ENV VERSION_COSIGN=2.5.3 \
+    VERSION_CT=0.9.0 \
     VERSION_HELM=3.16.4 \
     METAL_ROLES_VERSION=metal-stack-release-vector-module
 
@@ -31,7 +32,10 @@ RUN set -x \
         pyjwt==2.8.0 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
- && mv ct /usr/local/bin/
+ && mv ct /usr/local/bin/ \
+ && curl -Lo cosign https://github.com/sigstore/cosign/releases/download/v${VERSION_COSIGN}/cosign-linux-amd64 \
+ && chmod +x cosign \
+ && mv cosign /usr/local/bin/
 
 RUN mkdir -p /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
  && cd /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
