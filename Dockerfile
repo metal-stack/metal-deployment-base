@@ -35,14 +35,10 @@ RUN set -x \
  && mv ct /usr/local/bin/ \
  && curl -Lo cosign https://github.com/sigstore/cosign/releases/download/v${VERSION_COSIGN}/cosign-linux-amd64 \
  && chmod +x cosign \
- && mv cosign /usr/local/bin/
-
-RUN mkdir -p /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
- && cd /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins \
- && mkdir action modules \
- && curl -Lo action/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/action_plugins/metal_stack_release_vector.py \
- && curl -Lo modules/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/library/metal_stack_release_vector.py \
- && chmod +x action/metal_stack_release_vector.py modules/metal_stack_release_vector.py
+ && mv cosign /usr/local/bin/ \
+ && bash -c 'mkdir -p /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/{action,modules}' \
+ && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/action/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/action_plugins/metal_stack_release_vector.py \
+ && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/modules/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/library/metal_stack_release_vector.py
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
 COPY gai.conf /etc/gai.conf

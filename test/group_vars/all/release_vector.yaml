@@ -1,7 +1,6 @@
-metal_stack_release_version: develop
-
+---
 metal_stack_release_vectors:
-  - url: oci://ghcr.io/metal-stack/releases:{{ metal_stack_release_version }}
+  - url: oci://ghcr.io/metal-stack/releases:develop
     variable_mapping_path: metal_stack_release.mapping
     include_role_defaults: metal-roles/common/roles/defaults
     oci_cosign_verify_key: |
@@ -9,8 +8,3 @@ metal_stack_release_vectors:
       MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdeAXd2namgVNDT0APmogKGwaV+Q4
       rfe4uVgmsyBbb6TrhX5Py6x1PsonDahTvdVpbSGC7QGEjxIHdi8HnJ4Okg==
       -----END PUBLIC KEY-----
-
-metal_stack_release_vector_replacements:
-    - key: name
-      old: ghcr.io/metal-stack/
-      new: r.metal-stack.io/
