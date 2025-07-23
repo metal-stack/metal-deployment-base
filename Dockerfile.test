@@ -1,2 +1,3 @@
-FROM metal-deployment-base
+ARG TAG=metal-deployment-base
+FROM ${TAG}
 COPY test .
