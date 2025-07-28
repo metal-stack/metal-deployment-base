@@ -14,4 +14,17 @@ $ ansible localhost -m metalstack.base.metal_stack_release_vector
 - Installing metal-roles (v0.15.17) to /root/.ansible/roles/metal-roles
 ```
 
+Alternatively, you can also create a small playbook and execute this instead:
+
+```yaml
+---
+# requires the metal_stack_release_vectors variable to be defined in your ansible variables
+- name: Resolve metal-stack release vector
+  gather_facts: no
+  hosts: localhost
+  connection: local
+  tasks:
+    - metalstack.base.metal_stack_release_vector:
+```
+
 After that, just as if `ansible-galaxy` was used, the roles referenced in the release vector are installed in `~/.ansible/roles`.
