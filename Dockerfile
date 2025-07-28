@@ -1,7 +1,7 @@
-FROM python:3.11-slim AS minimal
+FROM python:3.13-slim AS minimal
 
 ENV VERSION_CT=0.9.0 \
-    VERSION_HELM=3.16.4
+    VERSION_HELM=3.18.4
 
 RUN set -x \
  && apt-get update \
@@ -17,15 +17,18 @@ RUN set -x \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible==8.4.0 \
-        ansible-core==2.15.4 \
-        Jinja2==3.1.3 \
-        netaddr==1.1.0 \
+        ansible-core==2.18.7 \
+        ansible==11.7.0 \
+        # unfortunately we cannot go to the latest bcrypt because passlib uses it wrong and it throws some confusing output, see: https://github.com/pyca/bcrypt/issues/684
+        bcrypt==4.0.1 \
         humanfriendly==10.0 \
+        Jinja2==3.1.3 \
         jmespath==1.0.1 \
-        kubernetes==25.3.0 \
-        pyjwt==2.8.0 \
+        kubernetes==33.1.0 \
+        netaddr==1.1.0 \
+        opencontainers==0.0.14 \
         passlib==1.7.4 \
+        pyjwt==2.10.1 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/
@@ -37,7 +40,7 @@ ENTRYPOINT []
 
 FROM minimal AS gcloud
 
-ENV CLOUD_SDK_VERSION=507.0.0
+ENV CLOUD_SDK_VERSION=530.0.0
 
 ENV PATH=/google-cloud-sdk/bin:$PATH
 
