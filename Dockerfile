@@ -40,7 +40,7 @@ ENTRYPOINT []
 
 FROM minimal AS withcloudproviders
 
-ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.2 \
+ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.3 \
  CLOUD_SDK_VERSION=530.0.0 \
  PATH=/google-cloud-sdk/bin:$PATH
 
