@@ -38,13 +38,17 @@ COPY gai.conf /etc/gai.conf
 
 ENTRYPOINT []
 
-FROM minimal AS gcloud
+FROM minimal AS withcloudproviders
 
-ENV CLOUD_SDK_VERSION=530.0.0
+ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.2 \
+ CLOUD_SDK_VERSION=530.0.0 \
+ PATH=/google-cloud-sdk/bin:$PATH
 
-ENV PATH=/google-cloud-sdk/bin:$PATH
-
-RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+RUN curl -LO https://github.com/metal-stack-cloud/cli/releases/download/${METAL_STACK_CLOUD_CLI_VERSION}/metal-linux-amd64 \
+ && chmod +x metal-linux-amd64 \
+ && mv metal-linux-amd64 /usr/local/bin/metal \
+ && metal --version \
+ && curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && tar xzf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && rm google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
  && gcloud config set core/disable_usage_reporting true \
