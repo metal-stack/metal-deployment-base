@@ -13,6 +13,7 @@ RUN set -x \
         make \
         openssh-client \
         rsync \
+        sshpass \
  && rm -rf /var/lib/apt/lists/* \
  && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
  && helm plugin install https://github.com/databus23/helm-diff \
