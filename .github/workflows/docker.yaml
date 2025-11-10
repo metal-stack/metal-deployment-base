@@ -20,8 +20,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     permissions:
-      packages: write
-      contents: read
+      contents: 'read'
+      id-token: 'write'
+      packages: 'write'
 
     steps:
     - name: Check out code into the Go module directory
@@ -39,6 +40,9 @@ jobs:
         [ "${GITHUB_EVENT_NAME}" == 'pull_request' ] && echo "tag=${GITHUB_HEAD_REF##*/}" >> $GITHUB_ENV || true
         [ "${GITHUB_EVENT_NAME}" == 'release' ] && echo "tag=${GITHUB_REF##*/}" >> $GITHUB_ENV || true
         [ "${GITHUB_EVENT_NAME}" == 'push' ] && echo "tag=latest" >> $GITHUB_ENV || true
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -59,6 +63,7 @@ jobs:
 
     - name: Build and push minimal image
       uses: docker/build-push-action@v6
+      id: build_minimal
       with:
         context: .
         push: true
@@ -68,9 +73,35 @@ jobs:
 
     - name: Build and push image
       uses: docker/build-push-action@v6
+      id: build
       with:
         context: .
         push: true
         sbom: true
         tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
         target: withcloudproviders
+
+    - uses: google-github-actions/auth@v2
+      id: auth
+      with:
+        workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github/providers/github-actions
+        service_account: keyless@metal-stack.iam.gserviceaccount.com
+        token_format: id_token
+        id_token_audience: sigstore
+        id_token_include_email: true
+
+    - name: Sign image
+      run: |
+        cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }} \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}-minimal \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.build_minimal.outputs.digest }} \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        cosign sign --yes --identity-token=${{ steps.auth.outputs.id_token }} \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }} \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}-minimal \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.build_minimal.outputs.digest }} \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
