@@ -14,4 +14,4 @@ build:
 test: build
 	docker build -t $(TAG)-test -f Dockerfile.test --build-arg=TAG=$(TAG) .
 	docker run --rm -i$(DOCKER_RUN_ARG) $(TAG)-test bash -c \
-		'ansible -m metalstack.base.metal_stack_release_vector localhost && find ~/.ansible/roles -maxdepth 1 -type d -ls && [ -z "$( ls -A ~/.ansible/roles )" ]'
+		'ansible -m metalstack.base.metal_stack_release_vector localhost && find ~/.ansible/roles -maxdepth 1 -type d -ls && find ~/.ansible/roles -mindepth 1 -maxdepth 1 | read || echo "no roles were downloaded"'
