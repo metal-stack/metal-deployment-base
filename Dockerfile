@@ -3,7 +3,7 @@ FROM python:3.13-slim AS minimal
 ENV VERSION_COSIGN=2.5.3 \
     VERSION_CT=0.9.0 \
     VERSION_HELM=3.18.4 \
-    METAL_ROLES_VERSION=metal-stack-release-vector-module
+    ANSIBLE_COMMON_VERSION=metal-stack-release-vector-module
 
 RUN set -x \
  && apt-get update \
@@ -39,8 +39,8 @@ RUN set -x \
  && chmod +x cosign \
  && mv cosign /bin/ \
  && bash -c 'mkdir -p /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/{action,modules}' \
- && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/action/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/action_plugins/metal_stack_release_vector.py \
- && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/modules/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${METAL_ROLES_VERSION}/library/metal_stack_release_vector.py
+ && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/action/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${ANSIBLE_COMMON_VERSION}/action_plugins/metal_stack_release_vector.py \
+ && curl -Lo /usr/share/ansible/collections/ansible_collections/metalstack/base/plugins/modules/metal_stack_release_vector.py https://raw.githubusercontent.com/metal-stack/ansible-common/${ANSIBLE_COMMON_VERSION}/library/metal_stack_release_vector.py
 
 COPY ansible.cfg /etc/ansible/ansible.cfg
 COPY gai.conf /etc/gai.conf
