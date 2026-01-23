@@ -2,7 +2,7 @@ FROM python:3.13-slim AS minimal
 
 ENV VERSION_COSIGN=2.5.3 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.19.5 \
+    VERSION_HELM=3.18.4 \
     ANSIBLE_COMMON_VERSION=v0.8.0
 
 RUN set -x \
