@@ -2,7 +2,7 @@ FROM python:3.14-slim AS minimal
 
 ENV VERSION_COSIGN=3.0.5 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=4.1.3 \
+    VERSION_HELM=3.20.1 \
     ANSIBLE_COMMON_VERSION=v0.8.1
 
 RUN set -x \
@@ -17,8 +17,8 @@ RUN set -x \
         rsync \
         sshpass \
  && rm -rf /var/lib/apt/lists/* \
- && curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash -s -- --version "v${VERSION_HELM}" \
- && helm plugin install https://github.com/databus23/helm-diff --verify=false \
+ && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
+ && helm plugin install https://github.com/databus23/helm-diff \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible-core==2.18.7 \
         ansible==11.7.0 \
@@ -33,7 +33,6 @@ RUN set -x \
         passlib==1.7.4 \
         ansible-pylibssh==1.4.0 \
         pyjwt==2.10.1 \
- && ansible-galaxy collection install kubernetes.core --upgrade \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
