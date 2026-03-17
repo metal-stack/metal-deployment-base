@@ -1,4 +1,4 @@
-FROM python:3.14-slim AS minimal
+FROM python:3.13-slim AS minimal
 
 ENV VERSION_COSIGN=3.0.5 \
     VERSION_CT=0.9.0 \
