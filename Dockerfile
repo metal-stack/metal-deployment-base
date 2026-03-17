@@ -1,9 +1,9 @@
-FROM python:3.13-slim AS minimal
+FROM python:3.14-slim AS minimal
 
-ENV VERSION_COSIGN=2.5.3 \
+ENV VERSION_COSIGN=3.0.5 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.18.4 \
-    ANSIBLE_COMMON_VERSION=v0.8.0
+    VERSION_HELM=4.1.3 \
+    ANSIBLE_COMMON_VERSION=v0.8.1
 
 RUN set -x \
  && apt-get update \
@@ -17,8 +17,8 @@ RUN set -x \
         rsync \
         sshpass \
  && rm -rf /var/lib/apt/lists/* \
- && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
- && helm plugin install https://github.com/databus23/helm-diff \
+ && curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash -s -- --version "v${VERSION_HELM}" \
+ && helm plugin install https://github.com/databus23/helm-diff --verify=false \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
         ansible-core==2.18.7 \
         ansible==11.7.0 \
@@ -27,9 +27,9 @@ RUN set -x \
         humanfriendly==10.0 \
         Jinja2==3.1.3 \
         jmespath==1.0.1 \
-        kubernetes==33.1.0 \
-        netaddr==1.1.0 \
-        opencontainers==0.0.14 \
+        kubernetes==35.0.0 \
+        netaddr==1.3.0 \
+        opencontainers==0.0.15 \
         passlib==1.7.4 \
         pyjwt==2.10.1 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
@@ -49,8 +49,8 @@ ENTRYPOINT []
 
 FROM minimal AS withcloudproviders
 
-ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.5 \
- CLOUD_SDK_VERSION=530.0.0 \
+ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.7 \
+ CLOUD_SDK_VERSION=560.0.0 \
  PATH=/google-cloud-sdk/bin:$PATH
 
 RUN curl -LO https://github.com/metal-stack-cloud/cli/releases/download/${METAL_STACK_CLOUD_CLI_VERSION}/metal-linux-amd64 \

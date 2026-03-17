@@ -26,10 +26,10 @@ jobs:
 
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Log in to the Container registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
@@ -42,13 +42,13 @@ jobs:
         [ "${GITHUB_EVENT_NAME}" == 'push' ] && echo "tag=latest" >> $GITHUB_ENV || true
 
     - name: Install Cosign
-      uses: sigstore/cosign-installer@v3
+      uses: sigstore/cosign-installer@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Build and export minimal image to Docker
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         load: true
@@ -62,7 +62,7 @@ jobs:
         TAG: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}-minimal
 
     - name: Build and push minimal image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       id: build_minimal
       with:
         context: .
@@ -72,7 +72,7 @@ jobs:
         target: minimal
 
     - name: Build and push image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       id: build
       with:
         context: .
@@ -81,7 +81,7 @@ jobs:
         tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
         target: withcloudproviders
 
-    - uses: google-github-actions/auth@v2
+    - uses: google-github-actions/auth@v3
       id: auth
       with:
         workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github/providers/github-actions
