@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS minimal
+FROM python:3.14-slim AS minimal
 
 ENV VERSION_COSIGN=3.0.5 \
     VERSION_CT=0.9.0 \
@@ -33,6 +33,7 @@ RUN set -x \
         passlib==1.7.4 \
         ansible-pylibssh==1.4.0 \
         pyjwt==2.10.1 \
+ && ansible-galaxy collection install kubernetes.core --upgrade \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
