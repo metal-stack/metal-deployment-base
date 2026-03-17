@@ -31,6 +31,7 @@ RUN set -x \
         netaddr==1.3.0 \
         opencontainers==0.0.15 \
         passlib==1.7.4 \
+        ansible-pylibssh==1.4.0 \
         pyjwt==2.10.1 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
