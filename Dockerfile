@@ -3,7 +3,7 @@ FROM python:3.14-slim AS minimal
 ENV VERSION_COSIGN=3.0.5 \
     VERSION_CT=0.9.0 \
     VERSION_HELM=3.20.1 \
-    ANSIBLE_COMMON_VERSION=v0.8.1
+    ANSIBLE_COMMON_VERSION=v0.9.1
 
 RUN set -x \
  && apt-get update \
