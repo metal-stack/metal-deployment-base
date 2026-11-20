@@ -25,6 +25,7 @@ jobs:
     secrets: inherit
     with:
       target: minimal
+      image-name: ${{ github.repository }}-minimal
 
   test:
     name: Test
