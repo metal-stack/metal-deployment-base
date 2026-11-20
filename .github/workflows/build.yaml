@@ -1,0 +1,63 @@
+---
+name: metal-stack component release
+
+on:
+  pull_request:
+    branches:
+      - master
+  release:
+    types:
+      - published
+  push:
+    branches:
+      - master
+
+jobs:
+  draft:
+    uses: metal-stack/actions-common/.github/workflows/release-drafter.yaml@v1
+
+  build:
+    uses: metal-stack/actions-common/.github/workflows/container-build.yaml@v1
+    secrets: inherit
+
+  build-minimal:
+    uses: metal-stack/actions-common/.github/workflows/container-build.yaml@allow-passing-targets
+    secrets: inherit
+    with:
+      target: minimal
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - build-minimal
+    steps:
+    - name: Test
+      run: |
+        make test
+      env:
+        TAG: ${{ needs.build-minimal.outputs.push-image }}:${{ needs.build-minimal.outputs.push-tag }}
+
+  sign-keyless:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - build-minimal
+    steps:
+    - uses: google-github-actions/auth@v3
+      id: auth
+      with:
+        workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github/providers/github-actions
+        service_account: keyless@metal-stack.iam.gserviceaccount.com
+        token_format: id_token
+        id_token_audience: sigstore
+        id_token_include_email: true
+
+    - name: Sign images keyless
+      run: |
+        cosign sign --yes --identity-token=${{ steps.auth.outputs.id_token }} \
+          ${{ needs.build.outputs.push-image }}:${{ needs.build.outputs.push-tag }} \
+          ${{ needs.build-minimal.outputs.push-image }}:${{ needs.build-minimal.outputs.push-tag }} \
+          ${{ needs.build.outputs.push-image }}@${{ needs.build.outputs.push-digest }} \
+          ${{ needs.build-minimal.outputs.push-image }}@${{ needs.build-minimal.outputs.push-digest }}
