@@ -1,9 +1,9 @@
 FROM python:3.14-slim AS minimal
 
-ENV VERSION_COSIGN=3.0.5 \
+ENV VERSION_COSIGN=3.1.3 \
     VERSION_CT=0.9.0 \
-    VERSION_HELM=3.20.1 \
-    ANSIBLE_COMMON_VERSION=v0.9.1
+    VERSION_HELM=4.3.2 \
+    ANSIBLE_COMMON_VERSION=v0.10.0
 
 RUN set -x \
  && apt-get update \
@@ -12,27 +12,29 @@ RUN set -x \
         curl \
         connect-proxy \
         git \
+        gnupg \
         make \
         openssh-client \
         rsync \
         sshpass \
  && rm -rf /var/lib/apt/lists/* \
- && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version "v${VERSION_HELM}" \
- && helm plugin install https://github.com/databus23/helm-diff \
+ && curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash -s -- --version "v${VERSION_HELM}" \
+ && curl -sL https://github.com/databus23.gpg | gpg --import \
+ && gpg --list-keys --with-fingerprint EA17A2A206AFF8CD \
+ && helm plugin install https://github.com/databus23/helm-diff/releases/latest/download/helm-diff-linux-amd64.tgz \
  && python3 -m pip install --disable-pip-version-check --no-cache-dir \
-        ansible-core==2.18.7 \
-        ansible==11.7.0 \
+        ansible-core==2.22.0 \
+        ansible==15.0.0 \
         # unfortunately we cannot go to the latest bcrypt because passlib uses it wrong and it throws some confusing output, see: https://github.com/pyca/bcrypt/issues/684
         bcrypt==4.0.1 \
-        humanfriendly==10.0 \
-        Jinja2==3.1.3 \
-        jmespath==1.0.1 \
-        kubernetes==35.0.0 \
+        Jinja2==3.1.6 \
+        jmespath==1.1.0 \
+        kubernetes==37.0.3 \
         netaddr==1.3.0 \
         opencontainers==0.0.15 \
         passlib==1.7.4 \
         ansible-pylibssh==1.4.0 \
-        pyjwt==2.10.1 \
+        pyjwt==2.15.1 \
  && curl -Lo ct https://github.com/coreos/container-linux-config-transpiler/releases/download/v${VERSION_CT}/ct-v${VERSION_CT}-x86_64-unknown-linux-gnu \
  && chmod +x ct \
  && mv ct /usr/local/bin/ \
@@ -50,8 +52,8 @@ ENTRYPOINT []
 
 FROM minimal AS withcloudproviders
 
-ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.7 \
- CLOUD_SDK_VERSION=560.0.0 \
+ENV METAL_STACK_CLOUD_CLI_VERSION=v0.5.8 \
+ CLOUD_SDK_VERSION=594.0.0 \
  PATH=/google-cloud-sdk/bin:$PATH
 
 RUN curl -LO https://github.com/metal-stack-cloud/cli/releases/download/${METAL_STACK_CLOUD_CLI_VERSION}/metal-linux-amd64 \
