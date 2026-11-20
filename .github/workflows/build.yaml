@@ -71,3 +71,5 @@ jobs:
           ${{ needs.build-minimal.outputs.push-image }}:${{ needs.build-minimal.outputs.push-tag }} \
           ${{ needs.build.outputs.push-image }}@${{ needs.build.outputs.push-digest }} \
           ${{ needs.build-minimal.outputs.push-image }}@${{ needs.build-minimal.outputs.push-digest }}
+      env:
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
