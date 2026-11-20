@@ -44,6 +44,9 @@ jobs:
   sign-keyless:
     name: Sign keyless
     runs-on: ubuntu-latest
+    permissions:
+      id-token: 'write'
+      packages: 'write'
     needs:
       - build
       - build-minimal
