@@ -32,6 +32,9 @@ jobs:
     needs:
       - build-minimal
     steps:
+    - name: Check out
+      uses: actions/checkout@v7
+
     - name: Test
       run: |
         make test
@@ -39,7 +42,7 @@ jobs:
         TAG: ${{ needs.build-minimal.outputs.push-image }}:${{ needs.build-minimal.outputs.push-tag }}
 
   sign-keyless:
-    name: Test
+    name: Sign keyless
     runs-on: ubuntu-latest
     needs:
       - build
@@ -54,7 +57,7 @@ jobs:
         id_token_audience: sigstore
         id_token_include_email: true
 
-    - name: Sign images keyless
+    - name: Sign images
       run: |
         cosign sign --yes --identity-token=${{ steps.auth.outputs.id_token }} \
           ${{ needs.build.outputs.push-image }}:${{ needs.build.outputs.push-tag }} \
