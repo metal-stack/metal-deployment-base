@@ -27,6 +27,7 @@ RUN set -x \
         ansible==15.0.0 \
         # unfortunately we cannot go to the latest bcrypt because passlib uses it wrong and it throws some confusing output, see: https://github.com/pyca/bcrypt/issues/684
         bcrypt==4.0.1 \
+        humanfriendly==10.0 \
         Jinja2==3.1.6 \
         jmespath==1.1.0 \
         kubernetes==37.0.3 \
